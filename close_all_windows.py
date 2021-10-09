@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from i3_ipc import I3Ipc
 import json
+from i3_ipc import I3Ipc
 def iterate_in_an_order(start, collection):
     yield collection[start]
     a = start
