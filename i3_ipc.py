@@ -23,6 +23,18 @@ class I3IpcRaw(socket.socket):
         if id & 1<<31:
             self.queue.append((id & ~(1<<31), payload))
         return (id, payload)
+class Tree:
+    def __init__(self, root):
+        assert _is_tree(root)
+        self.root = root
+    def focused(self):
+        return next((
+            (client, workspace, output)
+            for output in self.root['nodes']
+            for workspace in output['nodes']
+            for client in workspace['nodes']
+            if client['focused']
+        ), None)
 def _is_tree(root):
     if root['type'] != 'root': return False
     for output in root['nodes']:
@@ -48,9 +60,7 @@ class I3Ipc(I3IpcRaw):
             data = self.process()
             return data[0] & ~(1<<31), data[1]
     def tree(self):
-        root = self.request(self.TREE, b'', 'json')
-        assert _is_tree(root)
-        return root
+        return Tree(self.request(self.TREE, b'', 'json'))
     def workspace_info(self, wrkspc = None):
         if wrkspc is None:
             wrkspc = self.request(self.WORKSPACES, b'', 'json')
