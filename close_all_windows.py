@@ -17,16 +17,12 @@ def iterate_in_an_order(start, collection):
             yield collection[b]
             c = True
 with I3Ipc() as wm_con:
-    root = wm_con.request(wm_con.TREE, b'', 'json')
-    assert root['type'] == 'root'
+    root = wm_con.tree()
     workspaces = {}
     focused = None
     for output in root['nodes']:
-        assert output['type'] == 'output'
         for workspace in output['nodes']:
-            assert workspace['type'] == 'workspace'
             for client in workspace['nodes']:
-                assert client['type'] == 'con' and not client['nodes']
                 name = int(workspace['name'])
                 if client['focused']:
                     focused = name
