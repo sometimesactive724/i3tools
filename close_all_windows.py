@@ -25,12 +25,11 @@ with I3Ipc() as wm_con:
             for client in workspace['nodes']:
                 name = int(workspace['name'])
                 if client['focused']:
+                    assert focused is None
                     focused = name
                 workspaces.setdefault(name, []).append(client['id'])
     keys = sorted(workspaces)
     wm_con.request(wm_con.SUBSCRIBE, b'["window"]')
-    if focused is None:
-        assert not keys
     for i in () if focused is None else iterate_in_an_order(keys.index(focused), keys):
         wm_con.request(wm_con.COMMAND, b'workspace ' + str(i).encode('ascii'))
         for i in workspaces[i]:
