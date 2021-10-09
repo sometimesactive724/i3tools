@@ -4,6 +4,15 @@ import json
 import math
 import socket
 from collections import deque
+def _is_tree(root):
+    if root['type'] != 'root': return False
+    for output in root['nodes']:
+        if output['type'] != 'output': return False
+        for workspace in output['nodes']:
+            if workspace['type'] != 'workspace': return False
+            for client in workspace['nodes']:
+                if client['type'] != 'con' or client['nodes']: return False
+    return True
 class I3IpcRaw(socket.socket):
     COMMAND = 0
     WORKSPACES = 1
@@ -35,17 +44,40 @@ class Tree:
             for client in workspace['nodes']
             if client['focused']
         ), None)
-def _is_tree(root):
-    if root['type'] != 'root': return False
-    for output in root['nodes']:
-        if output['type'] != 'output': return False
-        for workspace in output['nodes']:
-            if workspace['type'] != 'workspace': return False
-            for client in workspace['nodes']:
-                if client['type'] != 'con' or client['nodes']: return False
-    return True
+class Workspaces(tuple):
+    def __new__(cls, workspaces):
+        return super().__new__(cls, (next(int(i['name']) for i in workspaces if i['focused']), tuple(int(i['name']) for i in workspaces)))
+    def info(self):
+        focused = self[0]
+        dist_next = math.inf
+        dist_prev = math.inf
+        min = math.inf
+        max = -math.inf
+        n = None
+        p = None
+        for position in self[1]:
+            if max < position:
+                max = position
+            if min > position:
+                min = position
+            if focused < position and position - focused < dist_next:
+                dist_next = position - focused
+                n = position
+            if focused > position and focused - position < dist_prev:
+                dist_prev = focused - position
+                p = position
+        d = {
+          'max': max,
+          'min': min,
+          'focused': focused,
+        }
+        if n is not None:
+            d['next'] = n
+        if p is not None:
+            d['prev'] = p
+        return d
 class I3Ipc(I3IpcRaw):
-    def request(self, id, payload = b'', output = None):
+    def request(self, id, payload = b'', *, output = None):
         super().request(id, payload)
         while (data := self.process())[0] != id:
             pass
@@ -60,39 +92,6 @@ class I3Ipc(I3IpcRaw):
             data = self.process()
             return data[0] & ~(1<<31), data[1]
     def tree(self):
-        return Tree(self.request(self.TREE, b'', 'json'))
-    def workspace_info(self, wrkspc = None):
-        if wrkspc is None:
-            wrkspc = self.request(self.WORKSPACES, b'', 'json')
-        for w in wrkspc:
-            if w['focused']:
-                focused = int(w['name'])
-        dist_next = math.inf
-        dist_prev = math.inf
-        min = math.inf
-        max = -math.inf
-        next = None
-        prev = None
-        for w in wrkspc:
-            name = int(w['name'])
-            if max < name:
-                max = name
-            if min > name:
-                min = name
-            if focused < name and name - focused < dist_next:
-                dist_next = name - focused
-                next = name
-            if focused > name and focused - name < dist_prev:
-                dist_prev = focused - name
-                prev = name
-        d = {
-          'name': name,
-          'max': max,
-          'min': min,
-          'focused': focused
-        }
-        if next is not None:
-            d['next'] = next
-        if prev is not None:
-            d['prev'] = prev
-        return d
+        return Tree(self.request(self.TREE, output='json'))
+    def workspaces(self):
+        return Workspaces(self.request(self.WORKSPACES, output='json'))
