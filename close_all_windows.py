@@ -18,15 +18,10 @@ def iterate_in_an_order(start, collection):
             c = True
 with I3Ipc() as wm_con:
     tree = wm_con.tree()
-    workspaces = {}
-    for output in tree.root['nodes']:
-        for workspace in output['nodes']:
-            for client in workspace['nodes']:
-                name = int(workspace['name'])
-                workspaces.setdefault(name, []).append(client['id'])
+    workspaces = tree.workspaces
     keys = sorted(workspaces)
     wm_con.request(wm_con.SUBSCRIBE, b'["window"]')
-    for i in () if (focused := tree.focused()) is None else iterate_in_an_order(keys.index(int(focused[1]['name'])), keys):
+    for i in () if (focused := tree.focused) is None else iterate_in_an_order(keys.index(int(focused[1]['name'])), keys):
         wm_con.request(wm_con.COMMAND, b'workspace ' + str(i).encode('ascii'))
         for i in workspaces[i]:
             wm_con.request(wm_con.COMMAND, b'[con_id=' + str(i).encode('ascii') + b']kill')
