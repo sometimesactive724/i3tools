@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import sys
 from i3_ipc import I3Ipc, Workspaces
-def get(direction, con):
-    w = con.workspaces()
-    (a, b, c) = {
-        'next': (w.next, w.max,  1),
-        'prev': (w.prev, w.min, -1)
+def get(direction, c):
+    w = c.workspaces()
+    (a, b) = {
+        'next': (w.next, w.max+1),
+        'prev': (w.prev, w.min-1)
     }[direction]
-    return str(b + c if a is None else a).encode('ascii')
+    return str(b if a is None else a).encode('ascii')
 def switch(direction, c):
     c.request(c.COMMAND, b'workspace ' + get(direction, c))
 def move(direction, c):

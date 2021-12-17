@@ -19,7 +19,7 @@ class I3IpcRaw(socket.socket):
     SUBSCRIBE = 2
     TREE = 4
     def __init__(self, sockpath = None, flags = socket.SOCK_STREAM):
-        super().__init__(socket.AF_UNIX, socket.SOCK_STREAM)
+        super().__init__(socket.AF_UNIX, flags)
         self.connect(os.environ['I3SOCK'] if sockpath is None else sockpath)
         self.queue = deque()
     def request(self, id, payload = b''):
